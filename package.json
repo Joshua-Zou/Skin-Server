@@ -1,7 +1,7 @@
 {
   "name": "APIServerSkinDetector",
   "version": "1.0.0",
-  "description": "Typescript example for running TensorFlow.js export of a Lobe model with Node.",
+  "description": "Backend server for the SkinDisease api",
   "main": "tfjsExample.ts",
   "dependencies": {
     "@tensorflow/tfjs-node": "^2.7.0",

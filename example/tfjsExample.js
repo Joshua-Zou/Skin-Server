@@ -68,7 +68,6 @@ app.post("/url", urlencodedParser, async function (req, res) {
   if (!req.body){
     return res.status(400).send({status: "ok", type: "no-body-found-in-your-request"});
   }
-  console.log(req.body)
   if (!req.body.url){
     return res.status(400).send({status: "failed", type: "no-url-posted"});
   }
