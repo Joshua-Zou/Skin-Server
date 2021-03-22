@@ -232,41 +232,41 @@ function main(imgPath) {
                     console.log(getMax(results.Confidences))
                    let largest = getMax(results.Confidences)
                    if (largest[0].toLowerCase().includes("actinic")){
-                     res.status(200).send({status: "ok", type: "actinic-keratosis"});
+                     res.status(200).send({status: "ok", type: "actinic-keratosis", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("acne")){
-                      res.status(200).send({status: "ok", type: "acne"});
+                      res.status(200).send({status: "ok", type: "acne", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("basal")){
-                      res.status(200).send({status: "ok", type: "basal-cell-cancer"});
+                      res.status(200).send({status: "ok", type: "basal-cell-cancer", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("blister")){
-                      res.status(200).send({status: "ok", type: "blister"});
+                      res.status(200).send({status: "ok", type: "blister", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("cellulitis")){
-                      res.status(200).send({status: "ok", type: "cellulitis"});
+                      res.status(200).send({status: "ok", type: "cellulitis", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("chicken")){
-                      res.status(200).send({status: "ok", type: "chickenpox"});
+                      res.status(200).send({status: "ok", type: "chickenpox", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("cold")){
-                      res.status(200).send({status: "ok", type: "cold-sore"});
+                      res.status(200).send({status: "ok", type: "cold-sore", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("keratosis")){
-                      res.status(200).send({status: "ok", type: "keratosis-pilaris"});
+                      res.status(200).send({status: "ok", type: "keratosis-pilaris", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("lupus")){
-                      res.status(200).send({status: "ok", type: "lupus"});
+                      res.status(200).send({status: "ok", type: "lupus", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("measle")){
-                      res.status(200).send({status: "ok", type: "measles"});
+                      res.status(200).send({status: "ok", type: "measles", confidence: lresults.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("ringworm")){
-                      res.status(200).send({status: "ok", type: "ringworm"});
+                      res.status(200).send({status: "ok", type: "ringworm", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("melanoma")){
-                      res.status(200).send({status: "ok", type: "melanoma"});
+                      res.status(200).send({status: "ok", type: "melanoma", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("melesma")){
-                     res.status(200).send({status: "ok", type: "melasma"});
+                     res.status(200).send({status: "ok", type: "melasma", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("psoriasis")){
-                     res.status(200).send({status: "ok", type: "psoriasis"});
+                     res.status(200).send({status: "ok", type: "psoriasis", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("rosacea")){
-                      res.status(200).send({status: "ok", type: "rosacea"});
+                      res.status(200).send({status: "ok", type: "rosacea", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("vitiligo")){
-                     res.status(200).send({status: "ok", type: "vitiligo"});
+                     res.status(200).send({status: "ok", type: "vitiligo", confidence: results.Confidences[largest[0]]});
                    }else if (largest[0].toLowerCase().includes("normal")){
-                      res.status(200).send({status: "ok", type: "no-conditions"});
+                      res.status(200).send({status: "ok", type: "no-conditions", confidence: results.Confidences[largest[0]]});
                    }else{
-                      res.status(200).send({status: "ok", type: "no-conditions"});
+                      res.status(200).send({status: "ok", type: "no-conditions", confidence: results.Confidences[largest[0]]});
                    }
                     // cleanup
                     model.dispose();
