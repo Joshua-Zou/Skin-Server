@@ -10,7 +10,8 @@
     "typescript": "^4.2.3",
     "express": "^4.17.1",
     "cors": "^2.8.5",
-    "express-fileupload": "^1.2.1"
+    "express-fileupload": "^1.2.1",
+    "request": "^2.88.2"
   },
   "devDependencies": {},
   "scripts": {
