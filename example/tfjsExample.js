@@ -8,30 +8,48 @@ const fileUpload = require("express-fileupload");
 const fs = require("fs");
 const fs_1 = require('fs')
 const request = require('request');
+const rateLimit = require("express-rate-limit");
 app.use(bodyParser.json({ extended: true }));
 app.use(fileUpload());
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-const hostname = "0.0.0.0";
-//const hostname = "localhost";
+//const hostname = "0.0.0.0";
+const hostname = "localhost";
 //const port = 80;
 const port = process.env.PORT || 3000;
 
 // http status codes
 const statusOK = 200;
 const statusNotFound = 404;
+const limiter = rateLimit({
+  windowMs: 0.0166 * 60 * 1000, // 1 minutes
+  max: 1, // limit each IP to 10 requests per windowMs
+  message: "Spam's not cool",
+      handler: function(req, res /*, next*/) {
+        res.status(429).send({status: "failed", type: "Too many requests per minute! (Max is 1 request per second)"})
+      },
+});
+app.use(limiter);
 
-var download = function(uri, filename, callback){
+var download = function(uri, filename, res1, req1, callback){
   var status;
     request.head(uri, function(err, res, body){
+      if (!res){
+        res1.status(400).send({status: "failed", type: "Couldn't find that image on the web! Make sure it's not private"})
+        status = "Couldn't find that image on the web! Make sure it's not private"
+        return "Couldn't find that image on the web! Make sure it's not private";
+      }
       console.log('content-type:', res.headers['content-type']);
       console.log('content-length:', res.headers['content-length']);
       if (Number(res.headers['content-length']) > 5000000){
+        //good number is 5000000
+        res1.status(400).send({status: "failed", type: "File too large! Max is 5mb"})
         status = "File too large. Max is 5mb"
         return "File too large. Max is 5mb"
       }
       if (!res.headers['content-type'].toLowerCase().includes("image")){
+        res1.status(400).send({status: "failed", type: "File type is not supported"})
         status = "file type is not supported"
         return "file type is not supported"
       }
@@ -71,8 +89,13 @@ app.post("/url", urlencodedParser, async function (req, res) {
   if (!req.body.url){
     return res.status(400).send({status: "failed", type: "no-url-posted"});
   }
+  var isImageUrl = require("is-image-url")
+  let kek = await isImageUrl(req.body.url)
+  if (kek === false){
+    return res.status(400).send({status: "failed", type: "Could not find image! Make sure it's not private"})
+  }
 
-   download(req.body.url, './images/'+imageName+".png", function(){
+   download(req.body.url, './images/'+imageName+".png", res, req, function(){
   console.log('done');
   fs.access(__dirname + "/images/" + imageName + ".png", async function(error) {
   if (error) {
