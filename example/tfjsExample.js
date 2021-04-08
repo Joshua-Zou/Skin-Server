@@ -484,7 +484,7 @@ app.post("/v1/raw", urlencodedParser, async function (req, res) {
                         });
                       };
                       console.log(getMax(results.Confidences))
-                      res.status(200).send({status: "ok", raw: results.Confidences);
+                      res.status(200).send({status: "ok", raw: results.Confidences});
 
                       // cleanup
                       model.dispose();
