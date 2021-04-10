@@ -33,7 +33,7 @@ const limiter = rateLimit({
   max: 1, // limit each IP to 10 requests per windowMs
   message: "Spam's not cool",
       handler: function(req, res /*, next*/) {
-        res.status(429).send({status: "failed", type: "Too many requests per minute! (Max is 1 request per second)"})
+        res.status(429).send({status: "failed", type: "Too many requests per second! (Max is 1 request per second), 30 requests per minute. (Whichever comes first)"})
       },
 });
 app.use(limiter);
@@ -46,11 +46,15 @@ let prefix = req.headers.authorization.slice(0, 8)
 const hmac = createHmac('sha512', key);
   hmac.update(JSON.stringify(prefix));
   const signature = hmac.digest('hex');
-  console.log(signature)
   let allhashes = await checkStuff(mongoclient, "list");
   if (!allhashes[signature]){
     return res.status(401).send({status: "failed", type: "Invalid API key! To get a new one, go to https://www.openskin.ml/"})
-  }else return next()
+  }else{
+      let userid = allhashes[signature];
+      await mongoclient.db("openskin").collection("userData")
+              .updateOne({ name: userid}, {$inc: {uses: 1}});
+      return next();
+  }
 }
 var download = function(uri, filename, res1, req1, callback){
   var status;
@@ -113,7 +117,6 @@ app.post("/url", checkkey, urlencodedParser, async function (req, res) {
   }
 
    download(req.body.url, './images/'+imageName+".png", res, req, function(){
-  console.log('done');
   fs.access(__dirname + "/images/" + imageName + ".png", async function(error) {
   if (error) {
     return res.status(400).send({status: "failed", type: "File-type-is-not-supported-or-too-large"});
@@ -1401,4 +1404,17 @@ async function checkStuff(mongoclient, name){
     }else{
     }
   }
+while(true){
+    await sleep(1000)
+    var d = new Date();
+    var m = d.getMinutes();
+    if (m === 10){
+        mongoclient.db("openskin").collection("userData").updateMany( {}, {$set:{uses: 0}});
+
+        await sleep(61000)
+    }
+}
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 })
