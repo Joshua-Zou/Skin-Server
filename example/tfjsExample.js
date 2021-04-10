@@ -9,6 +9,12 @@ const fs = require("fs");
 const fs_1 = require('fs')
 const request = require('request');
 const rateLimit = require("express-rate-limit");
+const { createHmac } = require("crypto")
+const {MongoClient} = require('mongodb')
+const uri = "mongodb+srv://pogchamp:helloworld@cluster0.4rlu4.mongodb.net";
+const mongoclient = new MongoClient(uri, {poolSize: 10, bufferMaxEntries: 0, useNewUrlParser: true,useUnifiedTopology: true});
+mongoclient.connect(async function(err, mongoclient){
+
 app.use(bodyParser.json({ extended: true }));
 app.use(fileUpload());
 app.use(cors());
@@ -31,7 +37,21 @@ const limiter = rateLimit({
       },
 });
 app.use(limiter);
-
+const checkkey = async (req, res, next) => {
+    if (!req.headers) return res.status(401).send({status: "failed", type: "No authorization headers present! To get one, go to https://www.openskin.ml/"})
+if (!req.headers.authorization) return res.status(401).send({status: "failed", type: "No authorization headers present! To get one, go to https://www.openskin.ml/"})
+let key = req.headers.authorization.slice(8);
+let prefix = req.headers.authorization.slice(0, 8)
+// kek hash this now
+const hmac = createHmac('sha512', key);
+  hmac.update(JSON.stringify(prefix));
+  const signature = hmac.digest('hex');
+  console.log(signature)
+  let allhashes = await checkStuff(mongoclient, "list");
+  if (!allhashes[signature]){
+    return res.status(401).send({status: "failed", type: "Invalid API key! To get a new one, go to https://www.openskin.ml/"})
+  }else return next()
+}
 var download = function(uri, filename, res1, req1, callback){
   var status;
     request.head(uri, function(err, res, body){
@@ -76,7 +96,7 @@ app.get("/", function (req, res) {
   res.statusCode = statusOK;
 });
 
-app.post("/url", urlencodedParser, async function (req, res) {
+app.post("/url", checkkey, urlencodedParser, async function (req, res) {
   let sampleFile;
   let uploadPath;
   let imageName = makeid(10);
@@ -310,7 +330,7 @@ main(__dirname + "/images/" + imageName + ".png")
 
 
 });
-app.post("/v1/raw", urlencodedParser, async function (req, res) {
+app.post("/v1/raw", checkkey, urlencodedParser, async function (req, res) {
     let sampleFile;
     let uploadPath;
     let imageName = makeid(10);
@@ -509,7 +529,7 @@ app.post("/v1/raw", urlencodedParser, async function (req, res) {
   
   });
 
-app.post("/v1/file/raw", function (req, res) {
+app.post("/v1/file/raw", checkkey, function (req, res) {
     let sampleFile;
     let uploadPath;
   
@@ -698,7 +718,7 @@ app.post("/v1/file/raw", function (req, res) {
       })
     });
   });
-app.post("/v1/file/basic", function (req, res) {
+app.post("/v1/file/basic", checkkey, function (req, res) {
     let sampleFile;
     let uploadPath;
   
@@ -925,7 +945,7 @@ app.post("/v1/file/basic", function (req, res) {
     });
   });
 
-app.post("/v1/base64/basic", urlencodedParser, async function (req, res) {
+app.post("/v1/base64/basic", checkkey, urlencodedParser, async function (req, res) {
     let sampleFile;
     let uploadPath;
     let imageName = makeid(10);
@@ -1168,7 +1188,7 @@ if (!base64Image.includes("iVBORw0KGg")){
   
   
 });
-app.post("/v1/base64/raw", urlencodedParser, async function (req, res) {
+app.post("/v1/base64/raw", checkkey,urlencodedParser, async function (req, res) {
     let sampleFile;
     let uploadPath;
     let imageName = makeid(10);
@@ -1371,3 +1391,14 @@ if (!base64Image.includes("iVBORw0KGg")){
 app.listen(port, hostname, function () {
   console.log(`Listening at http://${hostname}:${port}/...`);
 });
+
+ 
+async function checkStuff(mongoclient, name){
+    let result = await mongoclient.db("openskin").collection("hashedKeys")
+    .findOne({name: name});
+    if (result){
+      return result;
+    }else{
+    }
+  }
+})
