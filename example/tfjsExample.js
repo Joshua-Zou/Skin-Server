@@ -1,3 +1,9 @@
+// What I have to do:
+// Make the actual limiter, include in the "checkkey function"  // done passed tests
+// Also make an endpoint that lets people see their api key's stats //done, passed tests
+// Update the docs
+// maybe deploy to github/heroku if everything passes the tests and stuff 
+// Stap using // and start using /* */
 var tf = require("@tensorflow/tfjs-node");
 var express = require("express");
 var bodyParser = require("body-parser");
@@ -20,8 +26,8 @@ app.use(fileUpload());
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-const hostname = "0.0.0.0";
-//const hostname = "localhost";
+//const hostname = "0.0.0.0";
+const hostname = "localhost";
 //const port = 80;
 const port = process.env.PORT || 3000;
 
@@ -29,11 +35,11 @@ const port = process.env.PORT || 3000;
 const statusOK = 200;
 const statusNotFound = 404;
 const limiter = rateLimit({
-  windowMs: 0.0166 * 60 * 1000, // 1 minutes
-  max: 1, // limit each IP to 10 requests per windowMs
+  windowMs: 10000, // 1 second
+  max: 2, // limit each IP to 10 requests per windowMs
   message: "Spam's not cool",
       handler: function(req, res /*, next*/) {
-        res.status(429).send({status: "failed", type: "Too many requests per second! (Max is 1 request per second), 30 requests per minute. (Whichever comes first)"})
+        res.status(429).send({status: "failed", type: "Too many requests per second! (Max is 2 request per second), or 30 requests per minute. (Whichever comes first)"})
       },
 });
 app.use(limiter);
@@ -53,6 +59,14 @@ const hmac = createHmac('sha512', key);
       let userid = allhashes[signature];
       await mongoclient.db("openskin").collection("userData")
               .updateOne({ name: userid}, {$inc: {uses: 1}});
+      let user = await mongoclient.db("openskin").collection("userData")
+              .findOne({ name: userid});
+      if (user.uses > 1800){
+        var d = new Date();
+        var m = d.getMinutes();
+        m = 70-m;
+          return res.status(smth).send({"status":"failed", "type":"You have exceeded the maximum number of requests per hour (1800). Please wait for another "+m+"minutes before requesting again. If you need more requests, go to our website and fill out the form."})
+      }else 
       return next();
   }
 }
@@ -95,9 +109,7 @@ function sleep(ms) {
   }
 
 app.get("/", function (req, res) {
-  //fs.unlinkSync("/sandbox/src/images/123.PNG");
-  res.send("hello");
-  res.statusCode = statusOK;
+  res.status(200).send("do you really want to be here? If not, here are some helpful places to be. Our website: https://www.openskin.ml or our docs: https://docs.openskin.ml");
 });
 
 app.post("/url", checkkey, urlencodedParser, async function (req, res) {
@@ -1390,7 +1402,28 @@ if (!base64Image.includes("iVBORw0KGg")){
   
   
 });
+app.get("/v1/info/:key", async (req, res) => {
+    let all = req.params.key;
+    if (!all) return res.status(400).send({"status":"failed", "type":"No requested key found in your query"});
+    let key = all.slice(8);
+    let prefix = all.slice(0, 8)
+    const hmac = createHmac('sha512', key);
+  hmac.update(JSON.stringify(prefix));
+  const signature = hmac.digest('hex');
 
+    let info = await checkStuff(mongoclient, "list");
+    if (!info[signature]) return res.status(400).send({"status":"failed", "type":"Requested key does not exist"});
+    let userId = info[signature];
+    let user = await mongoclient.db("openskin").collection("userData").findOne({ name: userId});
+    if (!user) return res.status(501).send({"status":"internal server error", "type":"Could not access the database, or database was too slow to respond"});
+    return res.status(200).send({"status":"ok", "info":{
+        "ownerId":user.id,
+        "ownerName":user.displayName,
+        "api_key_uses":user.uses,
+        "api_key_prefix":user.prefix,
+        "expiration":"never"
+    }})
+})
 app.listen(port, hostname, function () {
   console.log(`Listening at http://${hostname}:${port}/...`);
 });
@@ -1404,6 +1437,8 @@ async function checkStuff(mongoclient, name){
     }else{
     }
   }
+hourlyClear();
+async function hourlyClear(){
 while(true){
     await sleep(1000)
     var d = new Date();
@@ -1413,6 +1448,7 @@ while(true){
 
         await sleep(61000)
     }
+}
 }
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
