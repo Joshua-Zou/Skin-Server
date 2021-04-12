@@ -20,8 +20,8 @@ app.use(fileUpload());
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-//const hostname = "0.0.0.0";
-const hostname = "localhost";
+const hostname = "0.0.0.0";
+//const hostname = "localhost";
 //const port = 80;
 const port = process.env.PORT || 3000;
 
