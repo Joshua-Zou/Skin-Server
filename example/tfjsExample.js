@@ -1,9 +1,3 @@
-// What I have to do:
-// Make the actual limiter, include in the "checkkey function"  // done passed tests
-// Also make an endpoint that lets people see their api key's stats //done, passed tests
-// Update the docs
-// maybe deploy to github/heroku if everything passes the tests and stuff 
-// Stap using // and start using /* */
 var tf = require("@tensorflow/tfjs-node");
 var express = require("express");
 var bodyParser = require("body-parser");
@@ -17,7 +11,7 @@ const request = require('request');
 const rateLimit = require("express-rate-limit");
 const { createHmac } = require("crypto")
 const {MongoClient} = require('mongodb')
-const uri = "mongodb connection string";
+const uri = "mongodb+srv://pogchamp:helloworld@cluster0.4rlu4.mongodb.net";
 const mongoclient = new MongoClient(uri, {poolSize: 10, bufferMaxEntries: 0, useNewUrlParser: true,useUnifiedTopology: true});
 mongoclient.connect(async function(err, mongoclient){
 
@@ -26,8 +20,8 @@ app.use(fileUpload());
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-const hostname = "0.0.0.0";
-//const hostname = "localhost";
+//const hostname = "0.0.0.0";
+const hostname = "localhost";
 //const port = 80;
 const port = process.env.PORT || 3000;
 
@@ -36,10 +30,10 @@ const statusOK = 200;
 const statusNotFound = 404;
 const limiter = rateLimit({
   windowMs: 10000, // 1 second
-  max: 2, // limit each IP to 10 requests per windowMs
+  max: 5, // limit each IP to 10 requests per windowMs
   message: "Spam's not cool",
       handler: function(req, res /*, next*/) {
-        res.status(429).send({status: "failed", type: "Too many requests per second! (Max is 2 request per second), or 30 requests per minute. (Whichever comes first)"})
+        res.status(429).send({status: "failed", type: "Too many requests per second! (Max is 5 requests per second), or 1800 requests per hour. (Whichever comes first)"})
       },
 });
 app.use(limiter);
@@ -65,7 +59,12 @@ const hmac = createHmac('sha512', key);
         var d = new Date();
         var m = d.getMinutes();
         m = 70-m;
-          return res.status(smth).send({"status":"failed", "type":"You have exceeded the maximum number of requests per hour (1800). Please wait for another "+m+"minutes before requesting again. If you need more requests, go to our website and fill out the form."})
+        if (m >60){
+            m = d.getMinutes();
+            m = m-10;
+            m = m*-1
+        }
+          return res.status(429).send({"status":"failed", "type":"You have exceeded the maximum number of requests per hour (1800). Please wait for another "+m+" minutes before requesting again. If you need more requests, go to our website and fill out the form."})
       }else 
       return next();
   }
@@ -1421,7 +1420,33 @@ app.get("/v1/info/:key", async (req, res) => {
         "ownerName":user.displayName,
         "api_key_uses":user.uses,
         "api_key_prefix":user.prefix,
+        "hasheed_api_key":user.key,
         "expiration":"never"
+    }})
+})
+app.put("/v1/user", checkkey, async (req, res) => {
+    let hashedKeys = await checkStuff(mongoclient, "list");
+    let key = req.headers.authorization.slice(8);
+    let keyprefix = req.headers.authorization.slice(0, 8)
+// kek hash this now
+const hmac = createHmac('sha512', key);
+  hmac.update(JSON.stringify(keyprefix));
+  const signature = hmac.digest('hex');
+
+    let userid = hashedKeys[signature];
+    let currentData = await mongoclient.db("openskin").collection("userData").findOne({name: userid})
+    console.log(currentData)
+    var displayName = currentData.displayName;
+    var prefix = currentData.prefix;
+    if (req.body.displayName) displayName = req.body.displayName
+    if (req.body.prefix) prefix = req.body.prefix
+    console.log(req.headers.authorization)
+    await mongoclient.db("openskin").collection("userData")
+    .updateOne({ name: userid}, {$set:{displayName: displayName, prefix:prefix}});
+
+    res.status(200).send({"status":"ok", "changed":{
+        "displayName":displayName,
+        "prefix":prefix
     }})
 })
 app.listen(port, hostname, function () {
@@ -1437,19 +1462,7 @@ async function checkStuff(mongoclient, name){
     }else{
     }
   }
-hourlyClear();
-async function hourlyClear(){
-while(true){
-    await sleep(1000)
-    var d = new Date();
-    var m = d.getMinutes();
-    if (m === 10){
-        mongoclient.db("openskin").collection("userData").updateMany( {}, {$set:{uses: 0}});
 
-        await sleep(61000)
-    }
-}
-}
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
