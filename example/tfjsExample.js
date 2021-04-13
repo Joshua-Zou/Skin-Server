@@ -1,3 +1,8 @@
+// What I have to do:
+// Make user name visible on stupid website
+// Make a limit for "put" request size (like displayName and prefix)
+// make regenerate thingy so you can update ur api key with terminal
+// Stap using // and start using /* */
 var tf = require("@tensorflow/tfjs-node");
 var express = require("express");
 var bodyParser = require("body-parser");
@@ -1438,15 +1443,52 @@ const hmac = createHmac('sha512', key);
     console.log(currentData)
     var displayName = currentData.displayName;
     var prefix = currentData.prefix;
+    var regenerate = false;
     if (req.body.displayName) displayName = req.body.displayName
     if (req.body.prefix) prefix = req.body.prefix
-    console.log(req.headers.authorization)
+    if (req.body.regenerate) regenerate = req.body.regenerate
+    
+    if (req.body.displayName && req.body.displayName.length > 25) return res.status(413).send({"status":"failed", "type":"display name too long. Max length is 25 characters"})
+    else if (req.body.prefix && req.body.prefix.length > 30) return res.status(413).send({"status":"failed", "type":"prefix too long. Max length is 30 characters"})
+var key1 = "ll";
+var prefix1 = "nu";
+var signature1;
+    if (req.body.regenerate === true){
+        // make ur stupid regenerate code rn I'm too tired and too hungry and have a stupid headache from all the hunger lol I suck
+        key1 = makeid(24);
+        prefix1 = makeid(8);
+        const hmac1 = createHmac('sha512', key1);
+        hmac1.update(JSON.stringify(prefix1));
+        signature1 = hmac1.digest('hex');
+
+        let reverseThis = await checkStuff(mongoclient, "list");
+        if (!reverseThis) return;
+        let reversed = await swap(reverseThis);
+        console.log(reversed)
+        if (reversed[userid]){
+            let relatedKey = reversed[userid]
+            let result = await mongoclient.db("openskin").collection("hashedKeys")
+            .updateOne({ name: "list"}, {$unset: {[relatedKey]:userid}});
+        prefix = prefix1
+        }else{
+
+        }
+await updateDocumentSet(mongoclient, userid, {
+  key: signature1,
+  prefix: prefix1
+})
+  await mongoclient.db("openskin").collection("hashedKeys")
+              .updateOne({ name: "list"}, {$set: {
+                [signature1]:userid
+              }});
+}
     await mongoclient.db("openskin").collection("userData")
     .updateOne({ name: userid}, {$set:{displayName: displayName, prefix:prefix}});
 
     res.status(200).send({"status":"ok", "changed":{
         "displayName":displayName,
-        "prefix":prefix
+        "prefix":prefix,
+        "regenerated":prefix1+key1
     }})
 })
 app.listen(port, hostname, function () {
@@ -1467,3 +1509,14 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 })
+function swap(json){
+    var ret = {};
+    for(var key in json){
+      ret[json[key]] = key;
+    }
+    return ret;
+  }
+  async function updateDocumentSet(mongoclient, name, updatedlisting){
+    let result = await mongoclient.db("openskin").collection("userData")
+    .updateOne({ name: name}, {$set: updatedlisting});
+}
