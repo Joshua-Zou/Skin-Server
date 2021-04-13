@@ -1,8 +1,3 @@
-// What I have to do:
-// Make user name visible on stupid website
-// Make a limit for "put" request size (like displayName and prefix)
-// make regenerate thingy so you can update ur api key with terminal
-// Stap using // and start using /* */
 var tf = require("@tensorflow/tfjs-node");
 var express = require("express");
 var bodyParser = require("body-parser");
@@ -16,7 +11,7 @@ const request = require('request');
 const rateLimit = require("express-rate-limit");
 const { createHmac } = require("crypto")
 const {MongoClient} = require('mongodb')
-const uri = "mongodb+srv://pogchamp:helloworld@cluster0.4rlu4.mongodb.net";
+const uri = "mongodb connection string url ";
 const mongoclient = new MongoClient(uri, {poolSize: 10, bufferMaxEntries: 0, useNewUrlParser: true,useUnifiedTopology: true});
 mongoclient.connect(async function(err, mongoclient){
 
@@ -1454,7 +1449,6 @@ var key1 = "ll";
 var prefix1 = "nu";
 var signature1;
     if (req.body.regenerate === true){
-        // make ur stupid regenerate code rn I'm too tired and too hungry and have a stupid headache from all the hunger lol I suck
         key1 = makeid(24);
         prefix1 = makeid(8);
         const hmac1 = createHmac('sha512', key1);
